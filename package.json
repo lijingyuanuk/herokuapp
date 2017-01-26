@@ -1,0 +1,19 @@
+{
+  "name": "cashflows",
+  "version": "1.0.0",
+  "description": "Make a better life",
+  "engines": {
+    "node": "6.9.4"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [
+    "node",
+    "heroku"
+  ],
+  "dependencies": {
+    "mysql": "^2.12.0"
+  }
+}

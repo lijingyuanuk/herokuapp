@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Deal&Cashflows</title>
+    <script type="text/javascript">
+    	var SERVER_URL = "" // url of server
+    	var cashData = null;
+    	var dealData = null;
+
+// http request with ajax
+// parms: parameter of request, requestMethod: GET or POST, cb: callback function for response.
+function ajaxRequest(url, parms, requestMethod, cb){
+    // 创建XMLHttpRequest对象
+    var createXMLHttpRequest = function() {
+        var xmlHttpReq = null;
+        if (window.XMLHttpRequest) {// IE 7.0及以上版本和非IE的浏览器
+            xmlHttpReq = new XMLHttpRequest();
+        } else {// IE 6.0及以下版本
+            try {
+                xmlHttpReq = new ActiveXObject("MSXML2.XMLHTTP");
+            }catch (e) {
+                try {
+                    xmlHttpReq = new ActiveXObject("Microsoft.XMLHTTP");
+                }catch (e) {}
+            }
+        }
+        if (!xmlHttpReq) {
+            alert("This browser dose not support Http Request!");
+            return null;
+        }
+        return xmlHttpReq;
+    }
+                 
+    var xmlHttpReq = createXMLHttpRequest();
+    if (xmlHttpReq) {
+        if("GET" == requestMethod.trim().toUpperCase()) { // Get method
+            var getUrl = parms? url+"?"+parms : url;
+            xmlHttpReq.open("GET",encodeURI(getUrl),true);
+            xmlHttpReq.send();
+        } else if ("POST" == requestMethod.trim().toUpperCase()) { // Post method
+            xmlHttpReq.open("POST",url,true);
+            xmlHttpReq.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
+            xmlHttpReq.send(encodeURI(parms));
+        } else {
+            return;
+        }
+        xmlHttpReq.onreadystatechange = function() {
+            if (xmlHttpReq.readyState == 4) {
+                switch (xmlHttpReq.status) {
+                    case 200: // request successfully
+                        if (cb) cb(JSON.parse(xmlHttpReq.responseText));
+                        break;
+                    default:
+                        alert("Request Error!\nError Code:"+xmlHttpReq.status);
+                        if (cb) cb(null);
+                        break;
+                }
+            }
+        }
+    }
+}
+
+    	// delete
+    	var deleteItem = function(name, value) {
+    		ajaxRequest(SERVER_URL+"/delete_"+name, "id="+value, "POST", function(data) {
+    			if (data.ok) {
+    				window.location="/";
+    			}
+    		});
+    	}
+
+    	// add data to 'deal'
+    	var submitDeal = function() {
+    		var form = document.getElementById("form_deal");
+    		var children = form.childNodes;
+    		var parms = ""
+    		// get all inputs in form 'deal'
+    		for (var i = 0; i < children.length; i++) {
+    			if (children[i].tagName == "INPUT" || children[i].tagName == "SELECT") {
+    				if (children[i].name != "") {
+    					if (children[i].value == "") return; // if there is one input not valid, return;
+    					parms = parms + children[i].name + "=" + children[i].value + "&";
+    				}
+    			}
+    		}
+    		if (parms != "") {
+    			parms = parms.substring(0, parms.length-1);
+    		}
+    		console.log(parms);
+    		ajaxRequest(SERVER_URL+"/deal", parms, "POST", function(data) {
+    			if (data.ok) {
+    				window.location="/";
+    			}
+    		});
+    	}
+
+    	// add data to 'cashflows'
+    	var submitCash = function() {
+    		var form = document.getElementById("form_cash");
+    		var children = form.childNodes;
+    		var parms = "";
+    		// get all inputs in form 'cashflows'
+    		for (var i = 0; i < children.length; i++) {
+    			if (children[i].tagName == "INPUT" || children[i].tagName == "SELECT") {
+    				if (children[i].name != "") {
+    					if (children[i].value == "") return; // if there is one input not valid, return;
+    					if (children[i].name == "cashflows" && !parseFloat(children[i].value)) return;
+						if (children[i].name == "date" && !Date.parse(children[i].value)) return;
+						if (children[i].name == "date") {
+							var date = Date.parse(children[i].value);
+							parms = parms + children[i].name + "=" + date + "&";
+						}
+						else {
+							parms = parms + children[i].name + "=" + children[i].value + "&";
+						}
+    				}
+    			}
+    		}
+    		if (parms != "") {
+    			parms = parms.substring(0, parms.length-1);
+    		}
+    		console.log(parms);
+    		ajaxRequest(SERVER_URL+"/cash", parms, "POST", function(data) {
+    			if (data.ok) {
+    				window.location="/";
+    			}
+    		});
+    	}
+
+    	// Show Data In Table 'Cashflows'
+    	var updateCashTable = function() {
+    		if (!cashData || !dealData) return;
+    		var cashTable = document.getElementById("cash_table");
+    		for (var i = 0; i < cashData.length; i++) {
+    			var tr = document.createElement("tr")
+    			tr.setAttribute("name", cashData[i].id);
+    			cashTable.appendChild(tr);
+    			var dealDt = null;
+    			for (var j = 0; j < dealData.length; j++) {
+    				if (dealData[j].id == cashData[i].deal_id) {
+    					dealDt = dealData[j];
+    					break;
+    				}
+    			}
+
+    			var tds = [Math.floor(cashData[i].id/10+1), Math.floor(cashData[i].deal_id/10+1), cashData[i].date.substring(0, 10), cashData[i].type, cashData[i].cashflows];
+    			for (var j = 0; j < tds.length; j++) {
+    				var td = document.createElement("td")
+    				td.innerHTML=tds[j];
+    				tr.appendChild(td);
+   				}
+
+   				var tmpTd = document.createElement("td");
+   				var btn = document.createElement("button");
+   				btn.setAttribute("name", "cash");
+   				btn.setAttribute("value", cashData[i].id);
+   				btn.setAttribute("onclick", "deleteItem(this.name, this.value)");
+   			    btn.innerHTML = "delete";
+   				tmpTd.appendChild(btn);
+   				tr.appendChild(tmpTd);
+    		}
+    	}
+
+    	var findCash = function() {
+    		cashData = null;
+    		ajaxRequest(SERVER_URL+"/find_cash", "", "GET", function(data) {
+    			cashData = data;
+    			updateCashTable();
+    		});
+    	}
+
+    	var findDeal = function() {
+    		dealData = null;
+    		ajaxRequest(SERVER_URL+"/find_deal", "", "GET", function(data) {
+    			dealData = data;
+    			updateCashTable();
+
+    			var cashSelect = document.getElementById("cash_name");
+    			var dealTable = document.getElementById("deal_table");
+    			var deletedDeal = document.getElementById("deleted_deal_table");
+    			for (var i = 0; i < data.length; i++) {
+    				var tr = document.createElement("tr");
+    				tr.setAttribute("name", data[i].id);
+
+    				var tds = [Math.floor(data[i].id/10+1), data[i].name, data[i].currency, data[i].fund];
+    				for (var j = 0; j < tds.length; j++) {
+    					var td = document.createElement("td")
+    					td.innerHTML=tds[j];
+    					tr.appendChild(td);
+    				}
+
+    				if (data[i].fund == "deleted") { // if it is deleted data, then show it in Table 'Deleted Deal'
+    					deletedDeal.appendChild(tr);
+    					continue;
+    				}
+
+    				// else, show it in Table 'Deal'
+    				dealTable.appendChild(tr);
+
+    				// add 'delete' button
+   					var tmpTd = document.createElement("td");
+   					var btn = document.createElement("button");
+   					btn.setAttribute("name", "deal");
+   					btn.setAttribute("value", data[i].id);
+   					btn.setAttribute("onclick", "deleteItem(this.name, this.value)");
+   			    	btn.innerHTML = "delete";
+   					tmpTd.appendChild(btn);
+   					tr.appendChild(tmpTd);
+
+   					// update selete options
+   					var option = document.createElement("option")
+    				option.setAttribute("value", data[i].id);
+    				option.innerHTML = Math.floor(data[i].id/10 + 1);
+    				cashSelect.appendChild(option);
+    			}
+    		});
+    	}
+    	findDeal();
+    	findCash();
+    </script>
+</head>
+<body>
+<div>
+	Table 'Cashflows'：
+	<table border="1" id="cash_table">
+		<tr>
+			<td>CF_ID</td>
+			<td>Deal_ID</td>
+			<td>Value_Date</td>
+			<td>CF_Type</td>
+			<td>Cashflows</td>
+			<td width="60"></td>
+		</tr>
+	</table>
+<br>
+Add Data to Table 'Cashflows'：
+<form id="form_cash">
+    Deal_ID:<select id="cash_name" name="deal_id" style="width:100px"></select>
+    <!-- CF_Type:<input name="type" type="text" value=""/>  -->
+    CF_Type:<select name="type">
+                <option value="Equity">Equity</option>
+                <option value="Proceeds">Proceeds</option>
+            </select>
+	Valuedate:<input name="date" type="text" placeholder="yyyy/MM/dd" />
+    Cashflows:<input name="cashflows" type="text" />
+    <input type="button" value="submit" onclick="submitCash()"/>
+</form>
+</div>
+<br><br>
+
+<div>
+	Table 'Deal'：
+	<table border="1" id="deal_table">
+		<tr>
+			<td>Deal_Id</td>
+			<td>Deal_Name</td>
+			<td>Local_Currency</td>
+			<td>Fund</td>
+			<td width="60"></td>
+		</tr>
+	</table>
+	<br>
+	Add Data To Table 'Deal'：
+	<form id="form_deal">
+   	 	Deal_Name:<input name="name" type="text" value="Validus" />
+   		Local_Currency:<select name="currency">
+                          <option value="GBP">GBP</option>
+                          <option value="USD">USD</option>
+                          <option value="EUR">EUR</option>
+                          <option value="GBP">RMB</option>
+                       </select>
+   		Fund:<input name="fund" type="text" value="Validus Fund" />
+    	<input type="button" value="submit" onclick="submitDeal()"/>
+	</form>
+
+	<br>
+	Deleted Data from Table 'Deal'：
+	<table border="1" id="deleted_deal_table">
+		<tr>
+			<td>Deal_Id</td>
+			<td>Deal_Name</td>
+			<td>Local_Currency</td>
+			<td>State</td>
+		</tr>
+	</table>
+</div>
+</body>
+</html>

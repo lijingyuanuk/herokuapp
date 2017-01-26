@@ -1,0 +1,13 @@
+环境：NodeJs，MySql
+
+1、数据库文件：transaction.sql
+通过MySql导入数据库transaction.sql，数据库名称为transaction
+
+2、安装NodeJs并且通过npm安装Mysql模块
+
+运行：
+命令行cd项目根目录后运行：node main.js
+如果运行成功，会打印  listen on port 8124
+如果运行失败，请检查数据库是否导入成功，mysql模块是否安装成功。
+
+然后浏览器打开index.html就可进行操作
